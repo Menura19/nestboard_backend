@@ -26,3 +26,17 @@ export const loginSchema = z
   .strict();
 
 export type LoginInput = z.infer<typeof loginSchema>;
+
+
+export const updateProfileSchema = z
+  .object({
+    displayName: z.string().trim().min(2).max(80).optional(),
+    avatarUrl: z.string().trim().max(2048).nullable().optional(),
+  })
+  .strict()
+  .refine(
+    (value) => value.displayName !== undefined || value.avatarUrl !== undefined,
+    { message: "At least one profile field is required" },
+  );
+
+export type UpdateProfileInput = z.infer<typeof updateProfileSchema>;
