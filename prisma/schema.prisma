@@ -41,9 +41,10 @@ model User {
   role        Role     @default(USER)
   createdAt   DateTime @default(now()) @map("created_at")
 
-  properties Property[] @relation("VendorProperties")
-  bookings   Booking[]
-  reviews    Review[]
+  properties    Property[]     @relation("VendorProperties")
+  bookings      Booking[]
+  reviews       Review[]
+  notifications Notification[]
 
   passwordHash  String?        @map("password_hash")
   refreshTokens RefreshToken[]
@@ -177,4 +178,19 @@ model Review {
   @@unique([userId, propertyId])
   @@index([propertyId, createdAt(sort: Desc)])
   @@map("reviews")
+}
+
+model Notification {
+  id        String   @id @default(uuid()) @db.Uuid
+  userId    String   @map("user_id") @db.Uuid
+  title     String
+  message   String
+  type      String   @default("BOOKING")
+  isRead    Boolean  @default(false) @map("is_read")
+  createdAt DateTime @default(now()) @map("created_at")
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, isRead, createdAt(sort: Desc)])
+  @@map("notifications")
 }

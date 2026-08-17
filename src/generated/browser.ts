@@ -57,3 +57,8 @@ export type Favorite = Prisma.FavoriteModel
  * 
  */
 export type Review = Prisma.ReviewModel
+/**
+ * Model Notification
+ * 
+ */
+export type Notification = Prisma.NotificationModel
