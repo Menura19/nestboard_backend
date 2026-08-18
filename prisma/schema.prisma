@@ -41,13 +41,14 @@ model User {
   role        Role     @default(USER)
   createdAt   DateTime @default(now()) @map("created_at")
 
-  properties Property[] @relation("VendorProperties")
-  bookings   Booking[]
+  properties    Property[]     @relation("VendorProperties")
+  bookings      Booking[]
+  reviews       Review[]
+  notifications Notification[]
 
-  passwordHash String? @map("password_hash")
+  passwordHash  String?        @map("password_hash")
   refreshTokens RefreshToken[]
-
-  favorites Favorite[]
+  favorites     Favorite[]
 
   @@map("users")
 }
@@ -67,22 +68,23 @@ model RefreshToken {
 }
 
 model Property {
-  id           String       @id @default(uuid()) @db.Uuid
-  vendorId     String       @map("vendor_id") @db.Uuid
-  title        String
-  description  String       @db.Text
-  address      String
-  city         String
-  type         PropertyType
-  rating       Decimal      @default(0) @db.Decimal(3, 2)
-  amenities    String[]     @default([])
-  latitude     Float
-  longitude    Float
-  imageUrl     String       @map("image_url")
-  minStay      String       @default("1 month") @map("min_stay")
-  isActive     Boolean      @default(true) @map("is_active")
-  createdAt    DateTime     @default(now()) @map("created_at")
-  favoritedBy  Favorite[]
+  id          String       @id @default(uuid()) @db.Uuid
+  vendorId    String       @map("vendor_id") @db.Uuid
+  title       String
+  description String       @db.Text
+  address     String
+  city        String
+  type        PropertyType
+  rating      Decimal      @default(0) @db.Decimal(3, 2)
+  amenities   String[]     @default([])
+  latitude    Float
+  longitude   Float
+  imageUrl    String       @map("image_url")
+  minStay     String       @default("1 month") @map("min_stay")
+  isActive    Boolean      @default(true) @map("is_active")
+  createdAt   DateTime     @default(now()) @map("created_at")
+  favoritedBy Favorite[]
+  reviews     Review[]
 
   vendor    User       @relation("VendorProperties", fields: [vendorId], references: [id], onDelete: Cascade)
   roomTypes RoomType[]
@@ -136,6 +138,7 @@ model Booking {
   paymentStatus  PaymentStatus @default(PENDING) @map("payment_status")
   bookingStatus  BookingStatus @default(PENDING) @map("booking_status")
   createdAt      DateTime      @default(now()) @map("created_at")
+  review         Review?
 
   tenant User @relation(fields: [tenantId], references: [id], onDelete: Restrict)
   room   Room @relation(fields: [roomId], references: [id], onDelete: Restrict)
@@ -146,14 +149,48 @@ model Booking {
 }
 
 model Favorite {
-  userId String @map("user_id") @db.Uuid
-  propertyId String @map("property_id") @db.Uuid
-  createdAt DateTime @default(now()) @map("created_at")
+  userId     String   @map("user_id") @db.Uuid
+  propertyId String   @map("property_id") @db.Uuid
+  createdAt  DateTime @default(now()) @map("created_at")
 
-  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  user     User     @relation(fields: [userId], references: [id], onDelete: Cascade)
   property Property @relation(fields: [propertyId], references: [id], onDelete: Cascade)
 
   @@id([userId, propertyId])
   @@index([propertyId])
   @@map("favorites")
+}
+
+model Review {
+  id         String   @id @default(uuid()) @db.Uuid
+  userId     String   @map("user_id") @db.Uuid
+  propertyId String   @map("property_id") @db.Uuid
+  bookingId  String   @unique @map("booking_id") @db.Uuid
+  rating     Int
+  comment    String?  @db.Text
+  createdAt  DateTime @default(now()) @map("created_at")
+  updatedAt  DateTime @updatedAt @map("updated_at")
+
+  user     User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  property Property @relation(fields: [propertyId], references: [id], onDelete: Cascade)
+  booking  Booking  @relation(fields: [bookingId], references: [id], onDelete: Restrict)
+
+  @@unique([userId, propertyId])
+  @@index([propertyId, createdAt(sort: Desc)])
+  @@map("reviews")
+}
+
+model Notification {
+  id        String   @id @default(uuid()) @db.Uuid
+  userId    String   @map("user_id") @db.Uuid
+  title     String
+  message   String
+  type      String   @default("BOOKING")
+  isRead    Boolean  @default(false) @map("is_read")
+  createdAt DateTime @default(now()) @map("created_at")
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, isRead, createdAt(sort: Desc)])
+  @@map("notifications")
 }

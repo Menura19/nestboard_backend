@@ -1,5 +1,23 @@
 import type { RequestHandler } from "express";
 import * as svc from "../services/booking-service.js";
+import { prisma } from "../lib/prisma.js";
+
+async function createConfirmationNotification(userId: string) {
+  try {
+    await prisma.notification.create({
+      data: {
+        userId,
+        title: "Booking confirmed",
+        message: "Your NestBoard booking has been confirmed successfully.",
+        type: "BOOKING_CONFIRMED",
+      },
+    });
+  } catch (error) {
+    // Notifications are supplementary and must not make a successful
+    // booking request fail.
+    console.error("Notification creation failed:", error);
+  }
+}
 
 export const create: RequestHandler = async (req, res, next) => {
   try {
@@ -14,6 +32,7 @@ export const create: RequestHandler = async (req, res, next) => {
 export const createConfirmed: RequestHandler = async (req, res, next) => {
   try {
     const booking = await svc.createBookingConfirmed(req.user!.id, req.body);
+    await createConfirmationNotification(req.user!.id);
     res.json(booking);
   } catch (err) {
     next(err);
@@ -26,6 +45,7 @@ export const confirm: RequestHandler = async (req, res, next) => {
       String(req.params.id!),
       req.user!.id,
     );
+    await createConfirmationNotification(req.user!.id);
     res.json(booking);
   } catch (err) {
     next(err);

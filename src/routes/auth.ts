@@ -11,6 +11,7 @@ import {
   googleAuthSchema,
   loginSchema,
   registerSchema,
+  updateProfileSchema,
 } from "../schemas/auth.js";
 import { Errors } from "../lib/errors.js";
 import argon2 from "argon2";
@@ -169,3 +170,36 @@ authRouter.get("/me", verifyJwt, async (req, res, next) => {
     next(err);
   }
 });
+
+
+authRouter.patch(
+  "/me",
+  verifyJwt,
+  validateBody(updateProfileSchema),
+  async (req, res, next) => {
+    try {
+      const user = await prisma.user.update({
+        where: { id: req.user!.id },
+        data: {
+          ...(req.body.displayName !== undefined
+            ? { displayName: req.body.displayName.trim() }
+            : {}),
+          ...(req.body.avatarUrl !== undefined
+            ? { avatarUrl: req.body.avatarUrl }
+            : {}),
+        },
+        select: {
+          id: true,
+          email: true,
+          displayName: true,
+          role: true,
+          avatarUrl: true,
+          bioTag: true,
+        },
+      });
+      res.json(user);
+    } catch (err) {
+      next(err);
+    }
+  },
+);
